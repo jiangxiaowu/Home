@@ -109,7 +109,9 @@ export default {
     if (promise !== undefined) {
       promise
         .then(_ => {
-          console.log(_);
+          var a = {x: _};
+          delete a.x;
+          this.isPlaying = true;
           // Automatic playback started!
           // Show playing UI.
         })
@@ -119,12 +121,16 @@ export default {
           // Show paused UI.
         });
     }
+  },
+  beforeDestroy() {
+    this.player.pause();
+    this.player.currentTime = 0;
   }
 };
 </script>
 
 
-<style>
+<style scoped>
 * {
   margin: 0;
   padding: 0;
