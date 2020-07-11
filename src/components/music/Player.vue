@@ -109,7 +109,7 @@ export default {
     if (promise !== undefined) {
       promise
         .then(_ => {
-          var a = {x: _};
+          var a = { x: _ };
           delete a.x;
           this.isPlaying = true;
           // Automatic playback started!
