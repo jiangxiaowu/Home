@@ -1,50 +1,102 @@
 <template>
   <div>
-    <canvas id="bird" width="320" height="480"></canvas>
+    <canvas @click="clickFunc" id="bird" width="320" height="480"></canvas>
   </div>
 </template>
 
 
 <script>
 export default {
-  data() {
-    return {
-      cvs: null,
-      ctx: null,
-      sprite: null,
-      bg: null,
-      fg: null,
-      //Game state
-      state: {
-        current: 0,
-        getReady: 0,
-        game: 1,
-        over: 2
+  methods: {
+    clickFunc(evt) {
+      switch (this.state.current) {
+        case this.state.getReady:
+          this.state.current = this.state.game;
+          this.SWOOSHING.play();
+          break;
+        case this.state.game:
+          this.bird.flap();
+          this.FLAP.play();
+          break;
+        case this.state.over:
+          var rect = this.cvs.getBoundingClientRect();
+          var clickX = evt.clientX - rect.left;
+          var clickY = evt.clientY - rect.top;
+
+          //Click if we click on the start button
+          if (
+            clickX >= this.startBtn.x &&
+            clickX <= this.startBtn.x + this.startBtn.w &&
+            clickY >= this.startBtn.y &&
+            clickY <= this.startBtn.y + this.startBtn.h
+          ) {
+            this.pipes.reset();
+            this.bird.speedReset();
+            this.score.reset();
+            this.state.current = this.state.getReady;
+          }
+
+          break;
       }
-    };
+    }
   },
   mounted() {
     // Select CVS //
-    const cvs = document.getElementById("bird");
-    this.cvs = cvs;
+    const cvs = (this.cvs = document.getElementById("bird"));
     const ctx = cvs.getContext("2d");
-    this.ctx = ctx;
-    this.sprite = new Image();
-    this.sprite.src = require("../../assets/bird/img/sprite.png");
 
-    const _this = this;
+    //Game Vars and Consts
+    let frames = 0;
+    const DEGREE = Math.PI / 180;
+
+    //Load Sprite Image 载入图片
+    const sprite = new Image();
+    sprite.src = require("./img/sprite.png");
+
+    //Load sounds
+    const SCORE_S = new Audio();
+    SCORE_S.src = require("./audio/sfx_point.wav");
+
+    const FLAP = (this.FLAP = new Audio());
+    FLAP.src = require("./audio/sfx_flap.wav");
+
+    const HIT = new Audio();
+    HIT.src = require("./audio/sfx_hit.wav");
+
+    const SWOOSHING = (this.SWOOSHING = new Audio());
+    SWOOSHING.src = require("./audio/sfx_swooshing.wav");
+
+    const DIE = new Audio();
+    DIE.src = require("./audio/sfx_die.wav");
+
+    //Game state
+    const state = (this.state = {
+      current: 0,
+      getReady: 0,
+      game: 1,
+      over: 2
+    });
+
+    //Start button coord[协调]
+    this.startBtn = {
+      x: 120,
+      y: 263,
+      w: 83,
+      h: 29
+    };
+
     //Background
-    this.bg = {
+    const bg = {
       sX: 0,
       sY: 0,
       w: 275,
       h: 226,
       x: 0,
-      y: _this.cvs.height - 226,
+      y: cvs.height - 226,
 
       draw: function() {
-        _this.ctx.drawImage(
-          _this.sprite,
+        ctx.drawImage(
+          sprite,
           this.sX,
           this.sY,
           this.w,
@@ -55,8 +107,8 @@ export default {
           this.h
         );
 
-        _this.ctx.drawImage(
-          _this.sprite,
+        ctx.drawImage(
+          sprite,
           this.sX,
           this.sY,
           this.w,
@@ -70,19 +122,19 @@ export default {
     };
 
     //Foreground 前景
-    this.fg = {
+    const fg = {
       sX: 276,
       sY: 0,
       w: 224,
       h: 112,
       x: 0,
-      y: _this.cvs.height - 112,
+      y: cvs.height - 112,
 
       dx: 2,
 
       draw: function() {
-        _this.ctx.drawImage(
-          _this.sprite,
+        ctx.drawImage(
+          sprite,
           this.sX,
           this.sY,
           this.w,
@@ -93,8 +145,8 @@ export default {
           this.h
         );
 
-        _this.ctx.drawImage(
-          _this.sprite,
+        ctx.drawImage(
+          sprite,
           this.sX,
           this.sY,
           this.w,
@@ -107,14 +159,14 @@ export default {
       },
 
       update: function() {
-        if (_this.state.current == _this.state.game) {
+        if (state.current == state.game) {
           this.x = (this.x - this.dx) % (this.w / 2);
         }
       }
     };
 
     //Bird
-    this.bird = {
+    const bird = (this.bird = {
       animation: [
         { sX: 276, sY: 112 },
         { sX: 276, sY: 139 },
@@ -138,11 +190,11 @@ export default {
       draw: function() {
         let bird = this.animation[this.frame];
 
-        _this.ctx.save();
-        _this.ctx.translate(this.x, this.y);
-        _this.ctx.rotate(this.rotation); // 旋转API
-        _this.ctx.drawImage(
-          _this.sprite,
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation); // 旋转API
+        ctx.drawImage(
+          sprite,
           bird.sX,
           bird.sY,
           this.w,
@@ -153,7 +205,7 @@ export default {
           this.h
         );
 
-        _this.ctx.restore();
+        ctx.restore();
       },
 
       flap: function() {
@@ -162,48 +214,263 @@ export default {
 
       update: function() {
         //If the game state is get ready state, the bird must flap slowly
-        this.period = _this.state.current == _this.state.getReady ? 10 : 5;
+        this.period = state.current == state.getReady ? 10 : 5;
         //We increment (增量) the frame(帧) by 1, each period(周期)
         this.frame += frames % this.period == 0 ? 1 : 0;
         //Frame goes from 0 to 4 ,then again to 0
         this.frame = this.frame % this.animation.length;
 
-        if (_this.state.current == _this.state.getReady) {
+        if (state.current == state.getReady) {
           this.y = 150; //Reset position of the bird after game over
-          // this.rotation = 0 * DEGREE;
+          this.rotation = 0 * DEGREE;
         } else {
           this.speed += this.gravity;
           this.y += this.speed;
 
-          if (this.y + this.h / 2 >= _this.cvs.height - _this.fg.h) {
-            this.y = _this.cvs.height - _this.fg.h - this.h / 2;
-            if (_this.state.current == _this.state.game) {
-              _this.state.current = _this.state.over;
-              // DIE.play();
+          if (this.y + this.h / 2 >= cvs.height - fg.h) {
+            this.y = cvs.height - fg.h - this.h / 2;
+            if (state.current == state.game) {
+              state.current = state.over;
+              DIE.play();
             }
           }
 
           //If the speed is greater than the jump means the bird is falling down
-          // if (this.speed >= this.jump) {
-          //   this.rotation = 90 * DEGREE;
-          //   this.frame = 1;
-          // } else {
-          //   this.rotation = -25 * DEGREE;
-          // }
+          if (this.speed >= this.jump) {
+            this.rotation = 90 * DEGREE;
+            this.frame = 1;
+          } else {
+            this.rotation = -25 * DEGREE;
+          }
         }
       },
       speedReset: function() {
         this.speed = 0;
       }
+    });
+
+    //Get ready message
+    const getReady = {
+      sX: 0,
+      sY: 228,
+      w: 173,
+      h: 152,
+      x: cvs.width / 2 - 173 / 2,
+      y: 80,
+
+      draw: function() {
+        if (state.current == state.getReady) {
+          ctx.drawImage(
+            sprite,
+            this.sX,
+            this.sY,
+            this.w,
+            this.h,
+            this.x,
+            this.y,
+            this.w,
+            this.h
+          );
+        }
+      }
     };
 
-    this.ctx.fillStyle = "#70c5ce";
-    this.ctx.fillRect(0, 0, cvs.width, cvs.height);
+    //Get over message
+    const gameOver = {
+      sX: 175,
+      sY: 228,
+      w: 225,
+      h: 202,
+      x: cvs.width / 2 - 225 / 2,
+      y: 90,
 
-    this.sprite.onload = function() {
-      _this.bg.draw();
-      _this.fg.draw();
-      _this.bird.draw();
+      draw: function() {
+        if (state.current == state.over) {
+          ctx.drawImage(
+            sprite,
+            this.sX,
+            this.sY,
+            this.w,
+            this.h,
+            this.x,
+            this.y,
+            this.w,
+            this.h
+          );
+        }
+      }
+    };
+
+    //Pipes
+    const pipes = (this.pipes = {
+      position: [],
+
+      top: {
+        sX: 553,
+        sY: 0
+      },
+      bottom: {
+        sX: 502,
+        sY: 0
+      },
+
+      w: 53,
+      h: 400,
+      gap: 85,
+      maxYPos: -150,
+      dx: 2,
+
+      draw: function() {
+        for (let i = 0; i < this.position.length; i++) {
+          let p = this.position[i];
+
+          let topYPos = p.y;
+          let bottomYPos = p.y + this.h + this.gap;
+
+          //top pipe
+          ctx.drawImage(
+            sprite,
+            this.top.sX,
+            this.top.sY,
+            this.w,
+            this.h,
+            p.x,
+            topYPos,
+            this.w,
+            this.h
+          );
+
+          //bottom pipe
+          ctx.drawImage(
+            sprite,
+            this.bottom.sX,
+            this.bottom.sY,
+            this.w,
+            this.h,
+            p.x,
+            bottomYPos,
+            this.w,
+            this.h
+          );
+        }
+      },
+
+      update: function() {
+        if (state.current !== state.game) return;
+
+        if (frames % 100 == 0) {
+          this.position.push({
+            x: cvs.width,
+            y: this.maxYPos * (Math.random() + 1)
+          });
+        }
+        for (let i = 0; i < this.position.length; i++) {
+          let p = this.position[i];
+
+          let bottomPipeYPos = p.y + this.h + this.gap;
+
+          //Collision  detection 碰撞检测
+          //Top pipe
+          if (
+            bird.x + bird.radius > p.x &&
+            bird.x - bird.radius < p.x + this.w &&
+            bird.y + bird.radius > p.y &&
+            bird.y - bird.radius < p.y + this.h
+          ) {
+            state.current = state.over;
+            HIT.play();
+          }
+
+          //Bottom pipe
+          if (
+            bird.x + bird.radius > p.x &&
+            bird.x - bird.radius < p.x + this.w &&
+            bird.y + bird.radius > bottomPipeYPos &&
+            bird.y - bird.radius < bottomPipeYPos + this.h
+          ) {
+            state.current = state.over;
+            HIT.play();
+          }
+
+          //Move the pipes to the left
+          p.x -= this.dx;
+
+          //if the pipes go beyound[超过] canvas, we delete them from the array
+          if (p.x + this.w <= 0) {
+            this.position.shift();
+            score.value += 1;
+            SCORE_S.play();
+            score.best = Math.max(score.value, score.best);
+            localStorage.setItem("best", score.best);
+          }
+        }
+      },
+      reset: function() {
+        this.position = [];
+      }
+    });
+
+    //Score 得分
+    const score = (this.score = {
+      best: parseInt(localStorage.getItem("best")) || 0,
+      value: 0,
+
+      draw: function() {
+        ctx.fillStyle = "#FFF";
+        ctx.strokeStyle = "#FFF";
+
+        if (state.current == state.game) {
+          ctx.lineWidth = 2;
+          ctx.font = "35px Teko";
+          ctx.fillText(this.value, cvs.width / 2, 50);
+          ctx.strokeText(this.value, cvs.width / 2, 50);
+        } else if (state.current == state.over) {
+          //Score value
+          ctx.font = "25px Teko";
+          ctx.fillText(this.value, 225, 186);
+          ctx.strokeText(this.value, 225, 186);
+          //Best score
+          ctx.fillText(this.best, 225, 228);
+          ctx.strokeText(this.best, 225, 228);
+        }
+      },
+      reset: function() {
+        this.value = 0;
+      }
+    });
+
+    //Draw
+    function draw() {
+      ctx.fillStyle = "#70c5ce";
+      ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+      bg.draw();
+      pipes.draw();
+      fg.draw();
+      bird.draw();
+      getReady.draw();
+      gameOver.draw();
+      score.draw();
+    }
+
+    //Update
+    function update() {
+      bird.update();
+      fg.update();
+      pipes.update();
+    }
+
+    //Loop 循环
+    function loop() {
+      update();
+      draw();
+      frames++;
+
+      requestAnimationFrame(loop);
+    }
+
+    sprite.onload = function() {
+      loop();
     };
   }
 };
