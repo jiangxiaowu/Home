@@ -476,7 +476,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 canvas {
   border: 1px solid #000;
   display: block;
