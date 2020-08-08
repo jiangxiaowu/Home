@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <HelloWorld msg="Welcome to My World ~" />
+    <HelloWorld />
   </div>
 </template>
 
@@ -15,3 +15,4 @@ export default {
   }
 };
 </script>
+

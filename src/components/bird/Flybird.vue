@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div @keyup.space="clickFunc" class="back">
     <canvas @click="clickFunc" id="bird" width="320" height="480"></canvas>
   </div>
 </template>
@@ -9,6 +9,10 @@
 export default {
   methods: {
     clickFunc(evt) {
+      console.log(evt);
+      if (evt.keyCode != 32 && evt.type != "click") {
+        return;
+      }
       switch (this.state.current) {
         case this.state.getReady:
           this.state.current = this.state.game;
@@ -39,6 +43,9 @@ export default {
           break;
       }
     }
+  },
+  beforeMount() {
+    document.addEventListener("keyup", this.clickFunc);
   },
   mounted() {
     // Select CVS //
