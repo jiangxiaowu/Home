@@ -17,8 +17,8 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="less">
 .img {
-  width: 600px;
-  height: 400px;
+  width: 60%;
+  height: 40%;
   border-radius: 2%;
 }
 </style>
